@@ -1,12 +1,20 @@
 #!/usr/bin/env python3
 """Answer normalisation + equivalence. Unit-tested; do not patch blind."""
-import re
+import re, sys
 from fractions import Fraction
 
+MARKERS = re.compile(r"(?:final\s*answer|final|answer)\s*:\s*(.+)|the\s+answer\s+is\s*:?\s*(.+)", re.I)
+
 def extract(txt):
+    """The final answer: the text after the LAST marker ('FINAL:', 'Final answer:', 'Answer:',
+    'the answer is'), any case; with no marker, the last non-empty line. Bare 'x = 40' is not a marker."""
     txt = txt or ""
-    m = re.findall(r"FINAL\s*:\s*(.+)", txt, re.I)
-    got = m[-1] if m else ((txt.strip().splitlines() or [""])[-1])
+    ms = list(MARKERS.finditer(txt))
+    if ms:
+        got = ms[-1].group(1) or ms[-1].group(2) or ""
+    else:
+        lines = [l for l in txt.strip().splitlines() if l.strip()]
+        got = lines[-1] if lines else ""
     got = re.sub(r"</?[A-Za-z][^>]*>", " ", got)      # strip <answer> ... </answer>
     got = got.replace("<", " ").replace(">", " ")      # strip stray brackets
     return got.strip()
@@ -80,6 +88,12 @@ TESTS = [
  ("\u22120.75", "-3/4", True),
  ("(\u22123)/(4)", "-3/4", True),
  ("\u22123/4", "3/4", False),
+ # added after a fresh-user test (2026-10-18): common answer phrasings
+ ("Answer: 40", "40", True),
+ ("Final answer: 40", "40", True),
+ ("The answer is 40.\nHope that helps!", "40", True),
+ ("the answer is: 1/2", "0.5", True),
+ ("x = 40", "40", False),        # documented limit: a bare equation is not a marker
 ]
 if __name__ == "__main__":
     bad = 0
@@ -89,3 +103,4 @@ if __name__ == "__main__":
         if g != want: bad += 1
         print(f"{flag} same({got!r:<26}, {gold!r:<12}) = {g}  (want {want})  norm->{norm(extract(got))!r}")
     print(f"\n{len(TESTS)-bad}/{len(TESTS)} grader tests pass")
+    sys.exit(1 if bad else 0)

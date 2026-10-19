@@ -93,6 +93,9 @@ def main(argv=None):
         p.error('--min-agreement must be between 0 and 1')
     try:
         rows = load(a.csv)
+    except UnicodeDecodeError:
+        print(f'Could not read {a.csv}: the file is not UTF-8 text. Save it as UTF-8 (CSV UTF-8 in Excel) and rerun.', file=sys.stderr)
+        return 2
     except (OSError, InputError) as e:
         print(f'Could not read {a.csv}: {e}', file=sys.stderr)
         return 2
