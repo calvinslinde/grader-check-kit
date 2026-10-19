@@ -1,0 +1,11 @@
+id,judge,human
+q01,pass,pass
+q02,pass,fail
+q03,fail,fail
+q04,pass,pass
+q05,fail,pass
+q06,pass,pass
+q07,pass,pass
+q08,fail,fail
+q09,pass,pass
+q10,pass,pass
