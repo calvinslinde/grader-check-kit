@@ -55,7 +55,7 @@ def report(res, threshold):
     out = [f"Agreement: {res['agree']} of {res['n']} ({res['rate']:.1%})", '',
            'Person said -> judge said: count']
     for (h, j), c in sorted(res['pairs'].items()):
-        out.append(f'  {h} -> {j}: {c}')
+        out.append(f'  {short(h)} -> {short(j)}: {c}')
     if res['disagreements']:
         out += ['', 'Disagreements (id, judge, person):']
         out += [f'  {i}: judge={short(j)}, person={short(h)}' for i, j, h in res['disagreements']]
