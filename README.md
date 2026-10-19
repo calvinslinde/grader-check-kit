@@ -30,13 +30,13 @@ The grader was rebuilt with 18 unit tests. Separately, once the AI judge was che
 
 It pulls the final answer out of a model's output, normalizes it (tags, LaTeX fractions, square roots, units, filler words), and compares it to the correct answer, by number when both parse as numbers.
 
-**How it finds the final answer:** the text after the last `FINAL:`; if there is none, after the last `final answer:` or `final answer is`; if there is none, after the last `answer:` or `answer is` (any case). The colon or the word "is" is required, so a plain "this answer assumes" is not a marker. A trailing sentence after the answer ("$40$. I hope it is correct.") is dropped. Precedence means a remark such as "the answer is correct" after `FINAL: 40` does not override the 40. With no marker, it takes the last non-empty line. A bare equation such as `x = 40` is not a marker and will not match `40`; tell your model to end with `FINAL: <answer>`, or add the marker your prompts use to `MARKERS`.
+**How it finds the final answer:** the text after the last `FINAL:`; if there is none, after the last `final answer:` or `final answer is`; if there is none, after the last `answer:` or `answer is` (any case). The colon or the word "is" is required, so a plain "this answer assumes" is not a marker. A trailing sentence after a numeric answer ("$40$. I hope it is correct.") is dropped; text answers such as "Mt. Everest" are kept whole. Precedence means a remark such as "the answer is correct" after `FINAL: 40` does not override the 40. With no marker, it takes the last non-empty line. A bare equation such as `x = 40` is not a marker and will not match `40`; tell your model to end with `FINAL: <answer>`, or add the marker your prompts use to `MARKERS`.
 
 ```
 python3 grade.py
 ```
 
-This runs the 37 built-in tests: the original 18, 4 added for this release (the Unicode minus sign `−`, the same class of bug as the Unicode `√`), and 15 added after fresh-user tests caught common phrasings that were silently failing (`Answer: 40`, `Final answer: 40`, `The answer is 40.`, `The final answer is 40.`), a precedence case, and cases where a later plain "answer" must not take over. It exits 0 when every test passes and 1 otherwise, so it can gate a pipeline. Add your own cases to `TESTS` before you rely on it.
+This runs the 40 built-in tests: the original 18, 4 added for this release (the Unicode minus sign `−`, the same class of bug as the Unicode `√`), and 18 added after fresh-user tests caught common phrasings that were silently failing (`Answer: 40`, `Final answer: 40`, `The answer is 40.`, `The final answer is 40.`), a precedence case, and cases where a later plain "answer" must not take over. It exits 0 when every test passes and 1 otherwise, so it can gate a pipeline. Add your own cases to `TESTS` before you rely on it.
 
 Use it in your code: copy `grade.py` next to your script (it is a single file, not a package), then:
 

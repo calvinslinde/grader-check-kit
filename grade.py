@@ -28,7 +28,9 @@ def extract(txt):
     if got is None:
         lines = [l for l in txt.strip().splitlines() if l.strip()]
         got = lines[-1] if lines else ""
-    got = re.split(r"\.\s+(?=[A-Za-z])", got, maxsplit=1)[0]   # "$40$. I hope it is correct." -> "$40$"
+    parts = re.split(r"(\.\s+)(?=[A-Za-z])", got, maxsplit=1)   # ["$40$", ". ", "I hope it is correct."]
+    if len(parts) == 3 and value(norm(parts[0])) is not None:
+        got = parts[0]        # "$40$. I hope it is correct." -> "$40$"; "Mt. Everest" is left alone
     got = re.sub(r"</?[A-Za-z][^>]*>", " ", got)      # strip <answer> ... </answer>
     got = got.replace("<", " ").replace(">", " ")      # strip stray brackets
     return got.strip()
@@ -120,6 +122,10 @@ TESTS = [
  ("Let me check my work before giving the final answer.\nAnswer: 40", "40", True),
  ("Final Answer: The final answer is $40$. I hope it is correct.", "40", True),
  ("FINAL: 3.5", "7/2", True),
+ # added after the last check (2026-10-18): the trailing-sentence cut must not split abbreviations
+ ("Answer: Mt. Everest", "Mt. Everest", True),
+ ("Answer: St. Louis", "St. Louis", True),
+ ("Answer: Dr. Smith", "Dr. Smith", True),
 ]
 if __name__ == "__main__":
     bad = 0
