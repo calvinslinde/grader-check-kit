@@ -3,28 +3,32 @@
 import re, sys
 from fractions import Fraction
 
-# Marker patterns in order of precedence. The highest-precedence pattern that appears anywhere
-# wins, and within it the LAST occurrence is used. So "FINAL: 40 ... the answer is correct" gives 40.
+# Markers in order of precedence. The highest-precedence marker that appears anywhere wins,
+# and the text after its LAST occurrence is used (found by position, so an earlier marker's
+# capture cannot swallow a later one). "FINAL: 40 ... the answer is correct" gives 40.
 MARKERS = [
-    re.compile(r"FINAL\s*:\s*(.+)", re.I),
-    re.compile(r"final\s+answer\s*(?:is\b)?\s*:?\s*(.+)", re.I),
-    re.compile(r"\banswer\s*(?:is\b)?\s*:?\s*(.+)", re.I),
+    r"FINAL\s*:",
+    r"final\s+answer\s*(?:is\b\s*:?|:)",   # needs ':' or 'is', so "the final answer." is not a marker
+    r"\banswer\s*(?:is\b\s*:?|:)",          # same; "This answer assumes" is not a marker
 ]
+_STARTS = [re.compile("(?=" + m + ")", re.I) for m in MARKERS]
+_FULL = [re.compile(m + r"\s*(.*)", re.I) for m in MARKERS]
 
 def extract(txt):
     """The final answer: the text after the last 'FINAL:'; failing that, after the last
-    'final answer (is):'; failing that, after the last 'answer (is):' (any case). With no marker,
-    the last non-empty line. A bare equation such as 'x = 40' is not a marker."""
+    'final answer:' or 'final answer is'; failing that, after the last 'answer:' or 'answer is'
+    (any case). With no marker, the last non-empty line. A bare equation such as 'x = 40' is not a marker."""
     txt = txt or ""
     got = None
-    for pat in MARKERS:
-        ms = pat.findall(txt)
-        if ms:
-            got = ms[-1]
+    for starts, full in zip(_STARTS, _FULL):
+        positions = [m.start() for m in starts.finditer(txt)]
+        if positions:
+            got = full.match(txt, positions[-1]).group(1)
             break
     if got is None:
         lines = [l for l in txt.strip().splitlines() if l.strip()]
         got = lines[-1] if lines else ""
+    got = re.split(r"\.\s+(?=[A-Za-z])", got, maxsplit=1)[0]   # "$40$. I hope it is correct." -> "$40$"
     got = re.sub(r"</?[A-Za-z][^>]*>", " ", got)      # strip <answer> ... </answer>
     got = got.replace("<", " ").replace(">", " ")      # strip stray brackets
     return got.strip()
@@ -109,6 +113,13 @@ TESTS = [
  ("The final answer is 40.", "40", True),
  ("Final answer is 1/2", "0.5", True),
  ("the answer is correct", "40", False),
+ # added after the final check (2026-10-18): a later plain "answer" must not take over
+ ("Answer: 40\nThis answer assumes whole numbers.", "40", True),
+ ("Answer: 40\nI answered with the formula from step 2.", "40", True),
+ ("The answer is 40.\nThis answer uses the formula above.", "40", True),
+ ("Let me check my work before giving the final answer.\nAnswer: 40", "40", True),
+ ("Final Answer: The final answer is $40$. I hope it is correct.", "40", True),
+ ("FINAL: 3.5", "7/2", True),
 ]
 if __name__ == "__main__":
     bad = 0

@@ -45,6 +45,12 @@ def compare(rows):
             'pairs': pairs, 'disagreements': disagreements}
 
 
+def short(v, n=80):
+    """Verdict text for display: long free-text verdicts are cut so the report stays readable."""
+    v = str(v)
+    return v if len(v) <= n else v[:n] + '…'
+
+
 def report(res, threshold):
     out = [f"Agreement: {res['agree']} of {res['n']} ({res['rate']:.1%})", '',
            'Person said -> judge said: count']
@@ -52,7 +58,7 @@ def report(res, threshold):
         out.append(f'  {h} -> {j}: {c}')
     if res['disagreements']:
         out += ['', 'Disagreements (id, judge, person):']
-        out += [f'  {i}: judge={j}, person={h}' for i, j, h in res['disagreements']]
+        out += [f'  {i}: judge={short(j)}, person={short(h)}' for i, j, h in res['disagreements']]
     ok = res['rate'] >= threshold
     out += ['', f"{'USABLE' if ok else 'NOT USABLE'} at the {threshold:.0%} threshold."]
     if not ok:
