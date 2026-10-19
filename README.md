@@ -1,6 +1,6 @@
 # Check your AI grader before you trust its numbers
 
-If a program scores your AI's answers, the scores are only as good as that program. A grader that mishandles one answer format will report a capability the model doesn't have, or hide one it does.
+If a program scores your AI's answers, the scores are only as good as that program. I learned that the hard way. A grader that mishandles one answer format will make a model look like it can do something it can't, or hide something it can.
 
 This kit has two small tools and one habit.
 
