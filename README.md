@@ -30,13 +30,13 @@ The grader was rebuilt with 18 unit tests. Separately, once the AI judge was che
 
 It pulls the final answer out of a model's output, normalizes it (tags, LaTeX fractions, square roots, units, filler words), and compares it to the correct answer, by number when both parse as numbers.
 
-**How it finds the final answer:** the text after the *last* of these markers, in any case: `FINAL:`, `Final answer:`, `Answer:`, or `the answer is`. With no marker, it takes the last non-empty line. A bare equation such as `x = 40` is not a marker and will not match `40`; tell your model to end with `FINAL: <answer>`, or add the marker your prompts use to `MARKERS`.
+**How it finds the final answer:** the text after the last `FINAL:`; if there is none, after the last `final answer (is):`; if there is none, after the last `answer (is):` (any case). Precedence means a remark such as "the answer is correct" after `FINAL: 40` does not override the 40. With no marker, it takes the last non-empty line. A bare equation such as `x = 40` is not a marker and will not match `40`; tell your model to end with `FINAL: <answer>`, or add the marker your prompts use to `MARKERS`.
 
 ```
 python3 grade.py
 ```
 
-This runs the 27 built-in tests: the original 18, 4 added for this release (the Unicode minus sign `−`, the same class of bug as the Unicode `√`), and 5 added after a fresh-user test caught common phrasings that were silently failing (`Answer: 40`, `Final answer: 40`, `The answer is 40.`). It exits 0 when every test passes and 1 otherwise, so it can gate a pipeline. Add your own cases to `TESTS` before you rely on it.
+This runs the 31 built-in tests: the original 18, 4 added for this release (the Unicode minus sign `−`, the same class of bug as the Unicode `√`), and 9 added after fresh-user tests caught common phrasings that were silently failing (`Answer: 40`, `Final answer: 40`, `The answer is 40.`, `The final answer is 40.`) and a precedence case. It exits 0 when every test passes and 1 otherwise, so it can gate a pipeline. Add your own cases to `TESTS` before you rely on it.
 
 Use it in your code: copy `grade.py` next to your script (it is a single file, not a package), then:
 
@@ -53,7 +53,7 @@ Make a CSV with columns `id,judge,human`: one row per item, the judge's verdict,
 python3 check_judge.py example/hand_check.csv --min-agreement 0.95
 ```
 
-It prints the agreement rate, a person-versus-judge tally, and every disagreement. Then it says USABLE or NOT USABLE at your threshold. The exit code is 0 for usable, 1 for not usable, and 2 for bad input (a missing file, missing columns, an empty verdict, or a file that is not UTF-8), so it can gate an automated pipeline. Run `python3 check_judge.py --selftest` to check the tool itself.
+It prints the agreement rate, a person-versus-judge tally, and every disagreement. Then it says USABLE or NOT USABLE at your threshold. The exit code is 0 for usable, 1 for not usable, and 2 for bad input (a missing file, missing columns, an empty verdict, a file that is not UTF-8, or a file the CSV reader cannot parse), so it can gate an automated pipeline. Run `python3 check_judge.py --selftest` to check the tool itself.
 
 ## What it can't do
 

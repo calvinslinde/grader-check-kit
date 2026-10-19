@@ -3,16 +3,26 @@
 import re, sys
 from fractions import Fraction
 
-MARKERS = re.compile(r"(?:final\s*answer|final|answer)\s*:\s*(.+)|the\s+answer\s+is\s*:?\s*(.+)", re.I)
+# Marker patterns in order of precedence. The highest-precedence pattern that appears anywhere
+# wins, and within it the LAST occurrence is used. So "FINAL: 40 ... the answer is correct" gives 40.
+MARKERS = [
+    re.compile(r"FINAL\s*:\s*(.+)", re.I),
+    re.compile(r"final\s+answer\s*(?:is\b)?\s*:?\s*(.+)", re.I),
+    re.compile(r"\banswer\s*(?:is\b)?\s*:?\s*(.+)", re.I),
+]
 
 def extract(txt):
-    """The final answer: the text after the LAST marker ('FINAL:', 'Final answer:', 'Answer:',
-    'the answer is'), any case; with no marker, the last non-empty line. Bare 'x = 40' is not a marker."""
+    """The final answer: the text after the last 'FINAL:'; failing that, after the last
+    'final answer (is):'; failing that, after the last 'answer (is):' (any case). With no marker,
+    the last non-empty line. A bare equation such as 'x = 40' is not a marker."""
     txt = txt or ""
-    ms = list(MARKERS.finditer(txt))
-    if ms:
-        got = ms[-1].group(1) or ms[-1].group(2) or ""
-    else:
+    got = None
+    for pat in MARKERS:
+        ms = pat.findall(txt)
+        if ms:
+            got = ms[-1]
+            break
+    if got is None:
         lines = [l for l in txt.strip().splitlines() if l.strip()]
         got = lines[-1] if lines else ""
     got = re.sub(r"</?[A-Za-z][^>]*>", " ", got)      # strip <answer> ... </answer>
@@ -94,6 +104,11 @@ TESTS = [
  ("The answer is 40.\nHope that helps!", "40", True),
  ("the answer is: 1/2", "0.5", True),
  ("x = 40", "40", False),        # documented limit: a bare equation is not a marker
+ # added after the re-test (2026-10-18): precedence and more phrasings
+ ("FINAL: 40\nThe answer is correct.", "40", True),
+ ("The final answer is 40.", "40", True),
+ ("Final answer is 1/2", "0.5", True),
+ ("the answer is correct", "40", False),
 ]
 if __name__ == "__main__":
     bad = 0
